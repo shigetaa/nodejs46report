@@ -84,6 +84,7 @@ PDF形式はレポート出力の有力な候補となります。PDFで作成�
 
 まずは、HTMLファイルをPDFに変換する為に、**PhantomJS/CapserJS**を利用することで実現出来ます。
 それでは、`html2pdf.js`と言うブログラムを作成していきましょう。
+[参考ページ<br>https://github.com/shigetaa/nodejs31scraping](https://github.com/shigetaa/nodejs31scraping)
 ```javascript
 var url = "https://www.yahoo.co.jp";
 var savepath = "test.pdf";
