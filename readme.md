@@ -62,11 +62,67 @@ CSV形式と同じように、XML形式でも出力できるでしょう。多�
 
 ### レポートを印刷する場合
 
+色々な分野で電子化が進んでいるというものの、やはり、紙に資料を印刷して出力する必要がある場合も、まだまだ多いものです。その理由としては、役所に紙で提出する必要があったりまだまだ、紙で資料を読みたがる人がいたりすることがあるからです。
+この場合には、用紙サイズやページ枚数を意識したつくりのアプリ向けにデータを作成する必要があります。となると、PDF形式や、Excel/Word形式に限られてくるでしょう。
+
+**印刷向けのレポート**
+| フォーマット   | 特徴                                 |
+| :------------- | :----------------------------------- |
+| PDF形式        | プリンタに依存しない形式で出力できる |
+| Word/Excel形式 | きれいに印刷できる                   |
+
 ## PDF形式ファイルの作成
+
+PDF形式はレポート出力の有力な候補となります。PDFで作成すれば、PCやタブレット、スマートフォンなど、多くの環境でデザインの崩れを気にすることなく閲覧出来ます。
 
 ### 簡単にPDFを作る方法
 
+自動的に作るわけではありませんが、簡単にPDFを作るには、Microsoft の Excel や Word の PDF 出力機能を利用する方法があります。
+メニューの「保存」から「PDF形式で保存」を選ぶ事で、PDF形式で文章を出力することができます。
+
 ### PhantomJSでHTMLをPDFとして出力する方法
+
+まずは、HTMLファイルをPDFに変換する為に、**PhantomJS/CapserJS**を利用することで実現出来ます。
+それでは、`html2pdf.js`と言うブログラムを作成していきましょう。
+```javascript
+var url = "https://www.yahoo.co.jp";
+var savepath = "test.pdf";
+
+// CasperJSのオブジェクトを作成
+var casper = require('casper').create();
+casper.start();
+casper.open(url);
+
+// ページの設定
+casper.page.paperSize = {
+	width: '8.5in',
+	height: '11in',
+	orientation: "portrait",
+	margin: '1cm'
+};
+casper.open(url);
+// CSSを書き換え
+casper.then(function () {
+	casper.evaluate(function () {
+		var els = document.querySelectorAll('h1');
+		for (var i = 0; i < els.length; i++) {
+			var e = els[i];
+			e.style.backgroundColor = "red";
+			e.style.color = "white";
+		}
+	});
+});
+casper.then(function () {
+	casper.capture(savepath);
+});
+casper.run();
+```
+以下のコマンドを実行すると画面のスクリーンショットをPDFとしてtest.pdfと言うファイル名で保存されます
+```bash
+casperjs html2pdf.js
+```
+また、`evaluate`メソッドで読み込んだHTMLのCSSなどを変更してスクリーンショットを生成することが出来ます。
+
 
 ### PDFKitを利用して出力する
 
