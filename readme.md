@@ -83,6 +83,7 @@ PDF形式はレポート出力の有力な候補となります。PDFで作成�
 ### PhantomJSでHTMLをPDFとして出力する方法
 
 まずは、HTMLファイルをPDFに変換する為に、**PhantomJS/CapserJS**を利用することで実現出来ます。
+
 それでは、`html2pdf.js`と言うブログラムを作成していきましょう。
 [参考ページ<br>https://github.com/shigetaa/nodejs31scraping](https://github.com/shigetaa/nodejs31scraping)
 ```javascript
@@ -127,13 +128,186 @@ casperjs html2pdf.js
 
 ### PDFKitを利用して出力する
 
+PDFをゼロから作ることが出来る「PDFKit」と言うライブラリもNodo.js用に公開されています。
+このライブラリもnpm を利用してインストールする事ができます。
+```bash
+npm i pdfkit
+```
+ここで、作成するPDFを作成するプログラムで、「さざなみフォント」と言うフォントファイルを利用して、日本語を表示しますので、以下のサイトからフォントファイルをダウンロードして、プログラムファイルを同階層に設定して利用出来るように用意してください。
+
+[さざなみフォント<br>https://ja.osdn.net/projects/efont/](https://ja.osdn.net/projects/efont/)
+
+
+まずは、`pdfkit.js`ファイル名でプログラムを作成していきます。
+```javascript
+var PDFDocument = require('pdfkit');
+var fs = require('fs');
+const { lineTo } = require('pdfkit');
+// ドキュメントを作る
+var doc = new PDFDocument();
+// 出力ファイルを設定する
+doc.pipe(fs.createWriteStream('output.pdf'));
+// フォントを埋め込む
+doc.font('sazanami-gothic.ttf');
+// 文字を表示する
+doc.fontSize(40).text('親父からの一言', 90, 100);
+doc.fontSize(30).text(
+	"人を大事にする者は\n\n" +
+	"人からも\n\n" +
+	"大切にされると\n\n" +
+	"考えよ", 100, 180);
+// 図形を描画する
+doc.save()
+	.moveTo(80, 80)
+	.lineTo(400, 80)
+	.lineTo(400, 150)
+	.lineTo(80, 150)
+	.lineTo(80, 80)
+	.stroke('#0000FF');
+// 改ページを行う
+doc.addPage();
+// 図形を描画する
+doc.save()
+	.moveTo(100, 150)
+	.lineTo(100, 200)
+	.lineTo(200, 200)
+	.fill('#FF0000');
+// 描画を終了する
+doc.end();
+```
+上記のプログラムを実行すると、`output.pdf`と言うPDF形式のファイルが生成されます。
+```bash
+node pdfkit.js
+```
+| メソッド     | 意味                               |
+| :----------- | :--------------------------------- |
+| moveTo(x, y) | 図形の始点を指定する               |
+| lineTo(x, y) | 前回の座標から(x, y)へ線を引く     |
+| stoke(color) | それまでに指定した座標に線を引く   |
+| fill(color)  | それまでに指定した座標を塗りつぶす |
+
 ### PDFKitでグラフを描く
+
+今度は、データに基づいてPDFに簡単な棒グラフを描画する、プログラム`pdfkit-graph.js`を作成してみましょう。
+```javascript
+var PDFDocument = require('pdfkit');
+var fs = require('fs');
+
+// 描画するデータ
+var data = [
+	{ label: '国語', value: 76 },
+	{ label: '数学', value: 48 },
+	{ label: '理科', value: 89 },
+	{ label: '社会', value: 68 },
+	{ label: '音楽', value: 55 },
+	{ label: '英語', value: 73 },
+	{ label: '技術', value: 92 },
+	{ label: '芸術', value: 58 },
+	{ label: '選択', value: 79 }
+];
+
+// ドキュメントを作る
+var doc = new PDFDocument();
+var page_w = doc.page.width;
+var page_h = doc.page.height;
+
+// 出力ファイルを設定する
+doc.pipe(fs.createWriteStream('output-graph.pdf'));
+
+// フォントを埋め込む
+doc.font('sazanami-gothic.ttf');
+
+// タイトルを表示する
+doc.fontSize(30)
+	.text('成績グラフ', 20, 20);
+
+// グラフを描画する
+var margin = 20;
+var g_w = page_w - margin * 2 - 50;
+var g_x = margin + 50;
+var y = 80;
+var wpx = g_w / 100;
+for (var i = 0; i < data.length; i++) {
+	var value = data[i].value;
+	var label = data[i].label;
+	doc.save()
+		.rect(g_x, y, wpx * value, 20)
+		.fill((i % 2) ? 'blue' : 'red');
+	doc.fontSize(10)
+		.fillColor("black")
+		.text(label, 30, y + 5)
+		.text(value, g_x + 5, y + 5);
+	y += 20 + 5;
+}
+
+// 描画を終了する
+doc.end();
+```
+上記のプログラムを実行すると、`output-graph.pdf`と言うPDF形式のファイルが生成されます。
+```bash
+node pdfkit-graph.js
+```
+| メソッド名                                  | 説明                |
+| :------------------------------------------ | :------------------ |
+| rect(x, y, width, height)                   | 長方形を描画        |
+| roundRect(x, y, width, height, conerRadius) | 角丸長方形を描画    |
+| elipse(cx, cy, radiusX, radiusY)            | 楕円を描画          |
+| cicle(cx, cy, radius)                       | 正円を描画          |
+| polygon(points...)                          | 多角形を描画        |
+| path(pathData)                              | SVGのPath指定で描画 |
 
 ### PDFKitのより詳しい情報
 
+この他にも、PDFKitでは、図形にグラデーションをかけて描画したり、直接画像データを埋め込んだりと、他にもさまざまな機能が利用できます。
+
+[詳細はPDFkit公式サイト<br>https://pdfkit.org/](https://pdfkit.org/)
+
 ## Excel形式ファイル作成
 
+多くの人は、Microsoft Excel ファイルの出力を望んでいます。
+これは、普段からオフィースで利用する機会が多いからでしょう。
+使い慣れたファイル形式であれば、安心して利用できると言うのは大きいでしょう。
+Excelであれば、そこからさらにデータ集計を行ったり、印刷したりもできます。
+
 ## Node.js + Officegen を使う方法
+
+しかし、Excel形式のファイルは、基本的にExcelまたはExcel互換オフィースツールを利用しないと作成できません。Excel形式はそれほど単純なデータフォーマットではありませんが、Node.js様にライブラリ「officegen」が用意されています。
+これを利用する事で、Excelがインストールされていない環境でもExcelファイルを作成する事ができます。
+また、Word等のOfficeのファイル形式も出力することが出来ます。
+
+それでは、まず officegen を npm を利用してインストールしてみましょう。
+```bash
+npm i officegen
+```
+
+新規シートにデータを書き込む簡単なプログラム`officegen.js`を作成してみましょう。
+```javascript
+var fs = require('fs');
+var officegen = require('officegen');
+var xlsx = officegen('xlsx');
+
+// 新規シートを作成
+var sheet = xlsx.makeNewSheet();
+sheet.name = "test";
+
+// 直接データを書き換え
+sheet.data[0] = ["商品名", "値段", "備考"];
+sheet.data[1] = ["リンゴ", 340];
+sheet.data[2] = ["ミカン", 980];
+sheet.data[3] = ["バナナ", 280];
+
+// セル名を指定して書き換え
+sheet.setCell('C2', '新鮮');
+sheet.setCell('C3', '甘い');
+
+// ファイルを書き出す
+var strm = fs.createWriteStream('test.xlsx');
+xlsx.generate(strm);
+```
+上記のプログラムを実行すると、`text.xlsx`と言うExcel形式のファイルが生成されます。
+```bash
+node officegen.js
+```
 
 ## Rhino と Apache POI を使う方法
 
