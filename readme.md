@@ -309,8 +309,52 @@ xlsx.generate(strm);
 node officegen.js
 ```
 
-## Rhino と Apache POI を使う方法
-
-### その他の方法
-
 ## Web API で取得した値をExcelに書き込む
+
+ここでは、百人一首を取得するWeb APIを利用して、Excelに書き出すプログラムを作成していきます。
+
+以下のURL、にアクセスすると、百人一首をJSON形式で取得できます。
+
+http://api.aoikujira.com/hyakunin/get.php?fmt=json
+
+ここで、作るプログラムは上記のAPIより、JSON形式で百人一首の一覧を取得して、Excelファイルに書き込むプログラム`hyakunin-excel.js`ファイルを作成していきます。
+
+```javascript
+var API = "http://api.aoikujira.com/hyakunin/get.php?fmt=json";
+
+var fs = require('fs');
+var officegen = require('officegen');
+var xlsx = officegen('xlsx');
+var request = require('request');
+
+// 百人一首をダウンロード
+request(API, function (err, res, body) {
+	if (err) throw err;
+	var list = JSON.parse(body);
+	exportToExcel(list);
+	console.log(list);
+});
+
+function exportToExcel(list) {
+	// 新規シートを作成
+	var sheet = xlsx.makeNewSheet();
+	sheet.name = "百人一首";
+
+	// 直接データを書き換え
+	sheet.data[0] = [
+		"番号", "上の句", "下の句"
+	];
+	for (var i = 0; i < list.length; i++) {
+		var r = list[i];
+		sheet.data[i + 1] = [r.no, r.kami, r.simo];
+	}
+	// ファイルを書き出す
+	var strm = fs.createWriteStream('hyakunin.xlsx');
+	xlsx.generate(strm);
+	console.log("ok");
+}
+```
+上記のプログラムを実行すると、`hyakunin-excel.js`と言うExcel形式のファイルが生成されます。
+```bash
+node hyakunin-excel.js
+```
